@@ -5,167 +5,379 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 
+import figures.Figure;
+import figures.Line;
+import figures.Oval;
+import figures.Rectangle;
+
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
-import java.awt.event.MouseMotionListener;
-import java.awt.event.MouseMotionAdapter;
-import java.awt.event.WindowAdapter;
+import java.util.LinkedList;
 
 class DrawPanel extends JPanel {
 
-	// private int squareX = 50;
-	// private int squareY = 50;
-	// private int squareW = 20;
-	// private int squareH = 20;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private Boolean DEBUG = false;
+
 	private int X = 0;
 	private int Y = 0;
 	private int EX = 0;
 	private int EY = 0;
 
-	public void startDraw(int x, int y) {
-		
-		switch (ButtonsPanel.getSelection()) {
-		case 0:
-			X = x;
-			Y = y;
-			
-			break;
-			
-		case 1:
-			X = x;
-			Y = y;
-			
-			break;
-
-		default:
-			break;
-		}
-
-		
-		
-	};
-
-	public void endDraw(int x, int y) {
-
-		switch (ButtonsPanel.getSelection()) {
-		case 0:
-			EX = x;
-			EY = y;
-			
-			break;
-			
-		case 1:
-			EX = x;
-			EY = y;
-			
-			break;
-
-		default:
-			break;
-		}
-		
-
-	};
-
-	// public void dragLine(int x, int y) {
-	//
-	// };
+	private LinkedList<Figure> figureList = new LinkedList<Figure>();
 
 	public DrawPanel() {
+
+		setSize(900, 600);
+
 		setBorder(BorderFactory.createLineBorder(Color.black));
 
 		addMouseListener(new MouseAdapter() {
 			public void mousePressed(MouseEvent e) {
 
-				// moveSquare(e.getX(), e.getY());
-
 				startDraw(e.getX(), e.getY());
-				
-//				System.out.println("Start " + e.getX() + " " + e.getY());
+
+				if (DEBUG)
+					System.out.println("Start " + e.getX() + " " + e.getY());
 
 			}
 
 		});
 
 		addMouseListener(new MouseAdapter() {
+
 			public void mouseReleased(MouseEvent e) {
 
-				// moveSquare(e.getX(), e.getY());
-
 				endDraw(e.getX(), e.getY());
-				
-//				System.out.println("End " + e.getX() + " " + e.getY());
+
+				if (DEBUG)
+					System.out.println("End " + e.getX() + " " + e.getY());
+
+				figureList.add(newFigure(ButtonsPanel.getSelection()));
+
+				X = Y = EX = EY = -1;
 
 			}
+
 		});
 
 		addMouseMotionListener(new MouseAdapter() {
 			public void mouseDragged(MouseEvent e) {
 
-				// moveSquare(e.getX(), e.getY());
-
 				endDraw(e.getX(), e.getY());
-				
+
 				repaint(0, 0, 900, 600);
 
-//				System.out.println("Drag " + e.getX() + " " + e.getY());
+				if (DEBUG)
+					System.out.println("Drag " + e.getX() + " " + e.getY());
+			}
+		});
+
+		JButton button = ButtonsPanel.getDrawButton();
+		button.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				try {
+					addFigure(ButtonsPanel.getStartPoint().getX(), ButtonsPanel.getStartPoint().getY(),
+							ButtonsPanel.getEndPoint().getX(), ButtonsPanel.getEndPoint().getY());
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+
+			}
+		});
+
+		button = ButtonsPanel.getBackButton();
+		button.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				popFigure();
+
+			}
+		});
+		
+		button = ButtonsPanel.getEditButton();
+		button.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+				try {
+					editFigure(ButtonsPanel.getStartPoint().getX(), ButtonsPanel.getStartPoint().getY(),
+							ButtonsPanel.getEndPoint().getX(), ButtonsPanel.getEndPoint().getY());
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+
 			}
 		});
 
 	}
+	
+	public void startDraw(int x, int y) {
 
-	// private void moveSquare(int x, int y) {
-	// int OFFSET = 1;
-	// if ((squareX != x) || (squareY != y)) {
-	// repaint(squareX, squareY, squareW + OFFSET, squareH + OFFSET);
-	// squareX = x;
-	// squareY = y;
-	// repaint(squareX, squareY, squareW + OFFSET, squareH + OFFSET);
-	// }
-	// }
+		X = x;
+		Y = y;
+
+	};
+
+	public void endDraw(int x, int y) {
+
+		EX = x;
+		EY = y;
+
+	};
+	
+	private void editFigure(int x, int y, int xE, int yE){
+		
+		Figure editedFigure = figureList.pollLast();
+		
+		if (editedFigure==null){
+			return;
+		}
+		
+		figureList.add(newFigure(x, y, xE, yE));
+		
+		repaint(0, 0, 900, 600);
+		
+	}
+
+	private void popFigure() {
+
+		figureList.pollLast();
+
+		repaint(0, 0, 900, 600);
+
+	}
+
+	private void addFigure(int x, int y, int xE, int yE) {
+
+		try {
+
+			figureList
+					.add(newFigure(ButtonsPanel.getStartPoint().getX(), ButtonsPanel.getStartPoint().getY(),
+							ButtonsPanel.getEndPoint().getX(), ButtonsPanel.getEndPoint().getY()));
+
+			if (DEBUG) {
+				System.out.println(ButtonsPanel.getStartPoint());
+				System.out.println(ButtonsPanel.getEndPoint());
+			}
+
+			repaint(0, 0, 900, 600);
+
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+
+	}
+
+	Figure newFigure(int selection) {
+
+		Figure returnedFigure = null;
+
+		int tempX, tempY, tempEX, tempEY;
+
+		tempEX = Math.abs(EX - X);
+		tempEY = Math.abs(EY - Y);
+
+		if (ButtonsPanel.getProportions()) {
+			tempX = X < EX ? X : X - Math.min(tempEX, tempEY);
+			tempY = Y < EY ? Y : Y - Math.min(tempEX, tempEY);
+
+			tempEX = tempEY = Math.min(tempEX, tempEY);
+
+		} else {
+
+			tempX = X < EX ? X : EX;
+			tempY = Y < EY ? Y : EY;
+		}
+
+		switch (ButtonsPanel.getSelection()) {
+		case 0:
+			returnedFigure = new Line(X, Y, EX, EY);
+			break;
+
+		case 1:
+			returnedFigure = new Rectangle(tempX, tempY, tempEX, tempEY, ButtonsPanel.getFilled());
+			break;
+
+		case 2:
+			returnedFigure = new Oval(tempX, tempY, tempEX, tempEY, ButtonsPanel.getFilled());
+			break;
+
+		default:
+			returnedFigure = new Line(0, 0, 0, 0);
+			break;
+		}
+		
+		returnedFigure.setColor(ButtonsPanel.getColor());
+
+		return returnedFigure;
+	}
+
+	public Figure newFigure(int x, int y, int xE, int yE) {
+
+		Figure returnedFigure = null;
+
+		int tempX, tempY, tempEX, tempEY;
+
+		tempEX = Math.abs(xE - x);
+		tempEY = Math.abs(yE - y);
+
+		if (ButtonsPanel.getProportions()) {
+			tempX = x < xE ? x : x - Math.min(tempEX, tempEY);
+			tempY = y < yE ? y : y - Math.min(tempEX, tempEY);
+
+			tempEX = tempEY = Math.min(tempEX, tempEY);
+
+		} else {
+
+			tempX = x < xE ? x : xE;
+			tempY = y < yE ? y : yE;
+		}
+
+		switch (ButtonsPanel.getSelection()) {
+		case 0:
+			returnedFigure = new Line(x, y, xE, yE);
+			break;
+
+		case 1:
+			returnedFigure = new Rectangle(tempX, tempY, tempEX, tempEY, ButtonsPanel.getFilled());
+			break;
+
+		case 2:
+			returnedFigure = new Oval(tempX, tempY, tempEX, tempEY, ButtonsPanel.getFilled());
+			break;
+
+		default:
+			returnedFigure = new Line(0, 0, 0, 0);
+			break;
+		}
+
+		returnedFigure.setColor(ButtonsPanel.getColor());
+		
+		return returnedFigure;
+	}
 
 	public Dimension getPreferredSize() {
 		return new Dimension(900, 600);
 	}
 
+	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
+		
+//		g.setColor(Color.BLACK);
+		
+		drawFigures(g);
 
-		// Draw Text
-		// g.drawString("This is my custom Panel!",10,20);
-		// Ken Joy
-		// coursera.org
+		if (X == -1 && Y == -1 && EX == -1 && EY == -1) {
+			return;
+		}
 
-		// g.setColor(Color.RED);
-		// g.fillRect(squareX, squareY, squareW, squareH);
-		g.setColor(Color.BLACK);
-		// g.drawRect(squareX, squareY, squareW, squareH);
+		drawTempFigure(g);
+
+	}
+	
+	private void drawFigures(Graphics g){
+		for (Figure f : figureList) {
+			
+			g.setColor(f.getColor());
+			
+			f.draw(g);
+
+			if (DEBUG) {
+				System.out.println("Drawing " + f.getClass());
+			}
+		}
+	}
+	
+	private void drawTempFigure(Graphics g){
+		
+		g.setColor(ButtonsPanel.getColor());
+		
+		int tempX, tempY, tempEX, tempEY;
+
+		tempEX = Math.abs(EX - X);
+		tempEY = Math.abs(EY - Y);
+
+		if (ButtonsPanel.getProportions()) {
+			tempX = X < EX ? X : X - Math.min(tempEX, tempEY);
+			tempY = Y < EY ? Y : Y - Math.min(tempEX, tempEY);
+
+			tempEX = tempEY = Math.min(tempEX, tempEY);
+
+		} else {
+
+			tempX = X < EX ? X : EX;
+			tempY = Y < EY ? Y : EY;
+		}
+		
 
 		switch (ButtonsPanel.getSelection()) {
 		case 0:
 			g.drawLine(X, Y, EX, EY);
 			
-			break;
+			g.setColor(Color.RED);
+			
+			g.drawString("("+X+","+Y+")", X, Y);
+			
+			g.drawString("("+EX+","+EY+")", EX, EY);
+			
+			g.setColor(ButtonsPanel.getColor());
+			
+			return;
+			
+//			break;
 
 		case 1:
-			g.fillRect(X, Y, EX - X, EY - Y);
-			break;
 			
+			
+			
+			if (ButtonsPanel.getFilled())
+				g.fillRect(tempX, tempY, tempEX, tempEY);
+			else
+				g.drawRect(tempX, tempY, tempEX, tempEY);
+			break;
+
 		case 2:
-			g.fillRect(X, Y, EX - X, EY - Y);
-			break;
 			
+			g.setColor(Color.RED);
+			
+			g.drawString("("+(tempEX/2+tempX)+","+(tempEY/2+tempY)+")", tempEX/2+tempX, tempEY/2+tempY);
+			
+			if (ButtonsPanel.getFilled())
+				g.fillOval(tempX, tempY, tempEX, tempEY);
+			else
+				g.drawOval(tempX, tempY, tempEX, tempEY);
+			break;
+
 		default:
 			break;
 		}
 		
+		g.setColor(Color.RED);
 		
-//		System.out.println(lineX +" "+ lineY +" "+ lineEX +" "+ lineEY);
+		g.drawString("("+tempX+","+tempY+")", tempX, tempY);
 		
-//		g.drawLine(0, 0, 500, 500);
-
+		g.drawString("("+(tempEX+tempX)+","+(tempEY+tempY)+")", tempEX+tempX, tempEY+tempY);
+		
+		g.setColor(ButtonsPanel.getColor());
 	}
+	
+	
+
 }
